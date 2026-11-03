@@ -1,0 +1,198 @@
+{
+ "description": "Roteiro simulado do segundo teste (navegador). Exercita process.start/stop, browser.navigate/fill_form/click/console_messages/network_requests, file.search, file.patch e revalidação no navegador.",
+ "task": "A página de orçamento não mostra o total depois de clicar em Calcular. Inicie a aplicação (node server.mjs, porta 3000), abra a página no navegador, preencha Quantidade=2 e Preço unitário=19.90, clique em Calcular, identifique o problema, corrija o código e repita a interação para validar. Ao final, encerre o servidor e explique a causa e a correção.",
+ "steps": [
+  {
+   "expect": "Calcular",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Subir a aplicação",
+    "tool": "process.start",
+    "arguments": {
+     "command": "PORT=3000 node server.mjs",
+     "wait_ms": 3000
+    }
+   }
+  },
+  {
+   "expect": "Servidor ouvindo",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Abrir a página",
+    "tool": "browser.navigate",
+    "arguments": {
+     "url": "http://localhost:3000"
+    }
+   }
+  },
+  {
+   "expect": "browser.snapshot para ver",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Ver os elementos da página",
+    "tool": "browser.snapshot",
+    "arguments": {}
+   }
+  },
+  {
+   "expect": "Calcular",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Preencher o formulário",
+    "tool": "browser.fill_form",
+    "arguments": {
+     "fields": [
+      {
+       "name": "Quantidade",
+       "type": "textbox",
+       "target": "#quantity",
+       "value": "2"
+      },
+      {
+       "name": "Preço unitário",
+       "type": "textbox",
+       "target": "#unit-price",
+       "value": "19.90"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "expect": "browser.fill_form",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Enviar o formulário",
+    "tool": "browser.click",
+    "arguments": {
+     "target": "#calculate",
+     "element": "botão Calcular"
+    }
+   }
+  },
+  {
+   "expect": "browser.click",
+   "reply": {
+    "type": "tool_call",
+    "thought": "O total não apareceu; verificar erros no console",
+    "tool": "browser.console_messages",
+    "arguments": {
+     "level": "error"
+    }
+   }
+  },
+  {
+   "expect": "Cannot set properties of null",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Confirmar se a API respondeu",
+    "tool": "browser.network_requests",
+    "arguments": {
+     "static": false
+    }
+   }
+  },
+  {
+   "expect": "/api/quote",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Procurar o seletor usado no front-end",
+    "tool": "file.search",
+    "arguments": {
+     "query": "querySelector",
+     "path": "public"
+    }
+   }
+  },
+  {
+   "expect": "#total-value",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Conferir o id real no HTML",
+    "tool": "file.search",
+    "arguments": {
+     "query": "id=\"total",
+     "path": "public/index.html"
+    }
+   }
+  },
+  {
+   "expect": "id=\"total\"",
+   "reply": {
+    "type": "tool_call",
+    "thought": "O elemento se chama #total; corrigir o seletor",
+    "tool": "file.patch",
+    "arguments": {
+     "path": "public/app.js",
+     "old_text": "document.querySelector('#total-value')",
+     "new_text": "document.querySelector('#total')"
+    }
+   }
+  },
+  {
+   "expect": "Success",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Recarregar a página com o JS corrigido",
+    "tool": "browser.navigate",
+    "arguments": {
+     "url": "http://localhost:3000"
+    }
+   }
+  },
+  {
+   "expect": "ferramenta=browser.navigate",
+   "reply": {
+    "type": "tool_call",
+    "tool": "browser.fill_form",
+    "arguments": {
+     "fields": [
+      {
+       "name": "Quantidade",
+       "type": "textbox",
+       "target": "#quantity",
+       "value": "2"
+      },
+      {
+       "name": "Preço unitário",
+       "type": "textbox",
+       "target": "#unit-price",
+       "value": "19.90"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "expect": "browser.fill_form",
+   "reply": {
+    "type": "tool_call",
+    "tool": "browser.click",
+    "arguments": {
+     "target": "#calculate",
+     "element": "botão Calcular"
+    }
+   }
+  },
+  {
+   "expect": "browser.click",
+   "reply": {
+    "type": "tool_call",
+    "thought": "Verificar o total exibido",
+    "tool": "browser.snapshot",
+    "arguments": {}
+   }
+  },
+  {
+   "expect": "39,80",
+   "reply": "{\"type\":\"tool_call\",\"thought\":\"Validado; encerrar o servidor\",\"tool\":\"process.stop\",\"arguments\":{\"session_id\":{{session_id}}}}"
+  },
+  {
+   "expect": "process.stop",
+   "reply": {
+    "type": "message",
+    "content": "Causa: public/app.js escrevia o total em `#total-value`, mas o elemento no HTML é `<output id=\"total\">`; o console mostrava `TypeError: Cannot set properties of null`. A API respondia 200 corretamente. Correção: seletor alterado para `#total`. Validação no navegador: com Quantidade=2 e Preço=19.90 a página exibe Total: R$ 39,80. Servidor encerrado."
+   }
+  }
+ ]
+}

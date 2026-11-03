@@ -1,0 +1,5 @@
+# Scripts e código executados dentro do Linux/container devem manter LF mesmo em checkout no Windows.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary

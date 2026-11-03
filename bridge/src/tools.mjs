@@ -357,6 +357,9 @@ export function browserTools(codexTools) {
       description,
       schema: def.parameters || obj({}, []),
       translate(args) {
+        if (typeof args.filename === 'string' && (args.filename.startsWith('/') || args.filename.includes('..') || /^[A-Za-z]:/.test(args.filename))) {
+          return { deny: 'filename deve ser um caminho relativo dentro do workspace.' };
+        }
         if (alias === 'browser.navigate') {
           const url = String(args.url || '');
           if (!/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?(\/|$)/i.test(url) && !/^about:blank$/.test(url)) {
@@ -425,7 +428,11 @@ export function parseCodexOutput(output) {
   const exit_code = exits.length ? Number(exits[exits.length - 1][1]) : null;
   let status;
   if (running) status = 'running';
-  else if (exit_code === null) status = /rejected|declined|denied|aborted|failed|error/i.test(raw.slice(0, 300)) && !/Success\./.test(raw) ? 'error' : 'ok';
+  else if (exit_code === null) {
+    // Sem código de saída (MCP, recusas do Codex): erro só se a resposta COMEÇA indicando falha.
+    const head = raw.trimStart().split('\n')[0];
+    status = /^(### Error|Error\b|.*\b(rejected|declined|denied|aborted|timed out)\b)/i.test(head) ? 'error' : 'ok';
+  }
   else status = exit_code === 0 ? 'ok' : 'error';
   return { status, exit_code, duration_s: wall ? Number(wall[1]) : null, session_id: running ? Number(running[1]) : null, text, raw };
 }

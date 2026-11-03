@@ -1,0 +1,12 @@
+{
+  "name": "web-form-bug",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aplicação web mínima com bug proposital no front-end (segundo teste da POC: navegador)",
+  "type": "module",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  }
+}

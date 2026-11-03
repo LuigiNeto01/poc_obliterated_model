@@ -68,7 +68,7 @@ if (browser) {
     process.exit(1);
   }
   const outDir = path.join(root, 'logs', 'playwright');
-  const args = ['--headless', '--isolated', '--output-dir', outDir, '--allowed-origins', 'http://localhost:*;http://127.0.0.1:*'];
+  const args = ['--headless', '--isolated', '--browser', 'chromium', '--output-dir', outDir, '--allowed-origins', 'http://localhost:*;http://127.0.0.1:*'];
   if (process.env.PLAYWRIGHT_CHROMIUM) args.push('--executable-path', process.env.PLAYWRIGHT_CHROMIUM);
   if (process.env.PLAYWRIGHT_NO_SANDBOX === '1') args.push('--no-sandbox');
   toml += `
@@ -77,7 +77,7 @@ command = ${q(process.execPath)}
 args = [${[cli, ...args].map(q).join(', ')}]
 startup_timeout_sec = 60
 tool_timeout_sec = 120
-`;
+${process.env.PLAYWRIGHT_BROWSERS_PATH ? `# O Codex inicia servidores MCP com ambiente mínimo; repassa onde estão os navegadores.\nenv = { PLAYWRIGHT_BROWSERS_PATH = ${q(process.env.PLAYWRIGHT_BROWSERS_PATH)} }\n` : ''}`;
 }
 
 fs.mkdirSync(codexHome, { recursive: true });

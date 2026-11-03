@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orçamento</title>
+  </head>
+  <body>
+    <h1>Calculadora de orçamento</h1>
+    <form id="quote-form">
+      <label for="quantity">Quantidade</label>
+      <input id="quantity" name="quantity" type="number" min="1" step="1" required />
+      <label for="unit-price">Preço unitário (R$)</label>
+      <input id="unit-price" name="unitPrice" type="number" min="0" step="0.01" required />
+      <button type="submit" id="calculate">Calcular</button>
+    </form>
+    <p>Total: <output id="total">—</output></p>
+    <script src="/app.js"></script>
+  </body>
+</html>

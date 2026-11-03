@@ -58,6 +58,9 @@ http
         index = steps.length; // aborta
       } else {
         reply = typeof step.reply === 'string' ? step.reply : JSON.stringify(step.reply);
+        // Modelo de substituição mínimo: {{session_id}} = último session_id visto nos resultados.
+        const sessions = [...body.messages.map((m) => m.content).join('\n').matchAll(/session_id=(\d+)/g)];
+        if (sessions.length) reply = reply.replaceAll('{{session_id}}', sessions.at(-1)[1]);
         index++;
       }
       record({ index, model: body.model, last_user: lastUser.slice(0, 4000), reply });

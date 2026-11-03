@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.*
+!.env.example
+.run
+workspace
+logs
+.codex-home
+.codex-home-docker
+.git

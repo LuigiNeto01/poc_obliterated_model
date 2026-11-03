@@ -76,7 +76,8 @@ echo "[agent] logs: $ROOT/logs (console do bridge: $BRIDGE_CONSOLE)" >&2
 # O Codex NÃO recebe a chave da Opper: só o token local do bridge.
 CODEX_BIN="$ROOT/node_modules/.bin/codex"
 if [[ "$MODE" == "exec" ]]; then
-  env -u OPPER_API_KEY "$CODEX_BIN" exec --skip-git-repo-check -C "$WORKSPACE" -s "${CODEX_SANDBOX:-workspace-write}" "$@"
+  # stdin de /dev/null: com stdin não-TTY o `codex exec` espera EOF para anexá-lo ao prompt.
+  env -u OPPER_API_KEY "$CODEX_BIN" exec --skip-git-repo-check -C "$WORKSPACE" -s "${CODEX_SANDBOX:-workspace-write}" "$@" </dev/null
 else
   env -u OPPER_API_KEY "$CODEX_BIN" -C "$WORKSPACE" -s "${CODEX_SANDBOX:-workspace-write}" -a "$CODEX_APPROVAL" "$@"
 fi

@@ -173,7 +173,12 @@ export function convertInput(items, { maxResultChars = 12000, keepFullResults = 
           `TOOL_RESULT ferramenta=${tool}`,
           `status=${r.status}${r.exit_code !== null ? ` exit_code=${r.exit_code}` : ''}${r.duration_s !== null ? ` duracao_s=${r.duration_s}` : ''}${r.session_id !== null ? ` session_id=${r.session_id} (processo ainda em execução)` : ''}`,
         ].join('\n');
-        const body = truncateMiddle(r.text.trimEnd() || '(sem saída)', limit);
+        let text = r.text;
+        if (tool.startsWith('browser.')) {
+          // O Playwright MCP grava snapshots incrementais em arquivo fora do workspace; orienta o modelo.
+          text = text.replace(/- \[Snapshot\]\([^)]*\)/g, '- Snapshot completo não incluído aqui: use browser.snapshot para ver os elementos da página.');
+        }
+        const body = truncateMiddle(text.trimEnd() || '(sem saída)', limit);
         push('user', `${header}\n--- saída ---\n${body}\n--- fim ---`);
         return;
       }

@@ -17,7 +17,10 @@ COMPOSE=(docker compose -f "$ROOT/docker/compose.yml" -f "$ROOT/docker/compose.m
 cleanup() { "${COMPOSE[@]}" down --remove-orphans >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
-TASK="${E2E_TASK:-Investigue por que os testes deste projeto estão falhando. Leia o código, execute os testes, identifique a causa, implemente uma correção mínima e execute os testes novamente. Ao terminar, explique o problema e as alterações realizadas.}"
+DEFAULT_TASK="Investigue por que os testes deste projeto estão falhando. Leia o código, execute os testes, identifique a causa, implemente uma correção mínima e execute os testes novamente. Ao terminar, explique o problema e as alterações realizadas."
+SCENARIO_TASK="$(node -e 'const s=require(process.argv[1]); process.stdout.write(s.task||"")' "$ROOT/mock/scenarios/$NAME.json")"
+TASK="${E2E_TASK:-${SCENARIO_TASK:-$DEFAULT_TASK}}"
+if [[ "$NAME" == web-* ]]; then export BRIDGE_ENABLE_BROWSER=1; fi
 set +e
 timeout 600 "${COMPOSE[@]}" run --rm -T agent exec "$TASK" >"$RUN/codex-output.txt" 2>&1
 CODEX_EXIT=$?
@@ -31,6 +34,12 @@ echo "== diff:"
 RESULT="$(cd "$WS" && npm test 2>&1 | grep -E '^# (pass|fail)' || true)"
 echo "== verificação independente: $RESULT"
 FAIL=0
+if [[ -f "$ROOT/scripts/verify-$NAME.mjs" ]]; then
+  echo "== verificação no navegador (scripts/verify-$NAME.mjs):"
+  docker run --rm -e PLAYWRIGHT_NO_SANDBOX=1 -v "$WS:/ws" qwen-agent:local node "scripts/verify-$NAME.mjs" /ws || FAIL=1
+else
+  echo "== (sem verificador de navegador para $NAME)"
+fi
 [[ "$STATUS" == "0" ]] || { echo "FALHA: roteiro do mock não seguido (ver logs/mock-transcript.jsonl)"; FAIL=1; }
 echo "$RESULT" | grep -q '# fail 0' || { echo "FALHA: testes não passam"; FAIL=1; }
 [[ $CODEX_EXIT -eq 0 ]] || { echo "FALHA: codex saiu com $CODEX_EXIT"; FAIL=1; }

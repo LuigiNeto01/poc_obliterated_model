@@ -139,8 +139,10 @@ test('parseCodexOutput: exec, apply_patch, sessão em execução e MCP', () => {
   assert.match(b.text, /^Success/);
   const c = parseCodexOutput('Chunk ID: 2\nWall time: 5.0 seconds\nProcess running with session ID 7\nOriginal token count: 3\nOutput:\nlistening\n');
   assert.deepEqual([c.status, c.session_id], ['running', 7]);
-  const d = parseCodexOutput([{ type: 'input_text', text: '### Page\n- button "Enviar" [ref=e3]' }]);
+  const d = parseCodexOutput([{ type: 'input_text', text: '### Page\n- Console: 1 errors, 0 warnings\n- button "Enviar" [ref=e3]' }]);
   assert.equal(d.status, 'ok');
+  assert.equal(parseCodexOutput('### Error\nError: Browser is not installed').status, 'error');
+  assert.equal(parseCodexOutput('exec command rejected by user').status, 'error');
   assert.match(d.text, /ref=e3/);
 });
 
