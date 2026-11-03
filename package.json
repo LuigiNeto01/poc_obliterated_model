@@ -1,0 +1,25 @@
+{
+  "name": "poc-obliterated-model",
+  "version": "0.1.0",
+  "private": true,
+  "description": "POC: Codex CLI + Qwen3.8-27B OBLITERATED (Opper) via bridge de tool calling estruturado",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "bridge": "node bridge/src/server.mjs",
+    "test": "node --test \"bridge/test/*.test.mjs\"",
+    "test:e2e:mock": "bash scripts/e2e-mock.sh",
+    "check-api": "node scripts/check-api.mjs",
+    "logs": "node scripts/summarize-log.mjs"
+  },
+  "dependencies": {
+    "@openai/codex": "0.166.0",
+    "ajv": "8.20.0",
+    "undici": "7.30.1"
+  },
+  "optionalDependencies": {
+    "@playwright/mcp": "0.0.84"
+  }
+}

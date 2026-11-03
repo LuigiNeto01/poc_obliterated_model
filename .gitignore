@@ -1,0 +1,23 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dependencies / runtime
+node_modules/
+.codex-home/
+.codex-home-docker/
+logs/*
+!logs/.gitkeep
+.run/
+workspace/
+vendor/
+*.log
+
+# test artifacts
+examples/**/test-results/
+examples/**/.playwright-mcp/
+
+# certificados locais (CA de proxy corporativo etc.)
+docker/certs/*
+!docker/certs/.gitkeep

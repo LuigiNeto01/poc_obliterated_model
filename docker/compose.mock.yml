@@ -1,0 +1,29 @@
+# Sobreposição para o teste E2E SEM API real: troca a Opper por um "Qwen" roteirizado.
+# Uso: scripts/e2e-docker-mock.sh
+services:
+  mock-qwen:
+    image: qwen-agent:local
+    user: "${AGENT_UID:-1000}:${AGENT_GID:-1000}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command: ["node", "mock/mock-qwen.mjs", "/opt/poc/mock/scenarios/${MOCK_SCENARIO:-discount-bug}.json", "18901"]
+    environment:
+      MOCK_TRANSCRIPT: /opt/poc/logs/mock-transcript.jsonl
+      MOCK_HOST: 0.0.0.0
+    volumes:
+      - ../logs:/opt/poc/logs
+    networks: [mocknet]
+  bridge:
+    depends_on: [mock-qwen]
+    env_file: !reset []
+    environment:
+      OPPER_BASE_URL: http://mock-qwen:18901/v1
+      OPPER_API_KEY: mock-key-not-secret
+      OPPER_MODEL: heabsy/qwen38-obl
+      OPPER_PRICE_INPUT_PER_MTOK: "0.17"
+      OPPER_PRICE_OUTPUT_PER_MTOK: "1.19"
+    networks: [agentnet, mocknet]
+networks:
+  mocknet:
+    internal: true

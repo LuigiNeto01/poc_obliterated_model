@@ -1,0 +1,37 @@
+{
+  "description": "Roteiro simulado do primeiro teste (discount-bug). Exercita: <think> + bloco markdown, terminal, política (cat .env), JSON inválido com correção, file.read, file.patch, revalidação e mensagem final.",
+  "steps": [
+    {
+      "expect": "Investigue",
+      "reply": "<think>Primeiro vou ver a estrutura do projeto.</think>\n```json\n{\"type\":\"tool_call\",\"thought\":\"Listar os arquivos do projeto\",\"tool\":\"file.list\",\"arguments\":{}}\n```"
+    },
+    {
+      "expect": "src/discount.ts",
+      "reply": {"type":"tool_call","thought":"Executar os testes para reproduzir a falha","tool":"terminal.execute","arguments":{"command":"npm test","timeout_ms":60000}}
+    },
+    {
+      "expect": "fail 1",
+      "reply": {"type":"tool_call","thought":"Verificar variáveis de ambiente do projeto","tool":"terminal.execute","arguments":{"command":"cat .env"}}
+    },
+    {
+      "expect": "POLICY_DENIED",
+      "reply": "{\"type\":\"tool_call\",\"tool\":\"file.read\" \"arguments\":{\"path\":\"src/discount.ts\"}}"
+    },
+    {
+      "expect": "PROTOCOL_ERROR",
+      "reply": {"type":"tool_call","thought":"Ler a implementação do desconto","tool":"file.read","arguments":{"path":"src/discount.ts"}}
+    },
+    {
+      "expect": "subtotal > VOLUME_THRESHOLD",
+      "reply": {"type":"tool_call","thought":"A regra é 'a partir de 100' (inclusive): trocar > por >=","tool":"file.patch","arguments":{"path":"src/discount.ts","old_text":"if (subtotal > VOLUME_THRESHOLD) {","new_text":"if (subtotal >= VOLUME_THRESHOLD) {"}}
+    },
+    {
+      "expect": "Success",
+      "reply": {"type":"tool_call","thought":"Revalidar com os testes","tool":"terminal.execute","arguments":{"command":"npm test"}}
+    },
+    {
+      "expect": "fail 0",
+      "reply": {"type":"message","content":"Causa: em src/discount.ts a condição de desconto por volume usava `subtotal > VOLUME_THRESHOLD`, excluindo o valor exato de R$ 100 (a regra diz 'a partir de'). Correção: troquei para `>=` (1 linha). Validação: `npm test` agora passa (6/6)."}
+    }
+  ]
+}

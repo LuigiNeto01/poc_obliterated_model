@@ -1,0 +1,11 @@
+{
+  "name": "discount-bug",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Projeto de teste com bug proposital para a POC do agente",
+  "type": "module",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "test": "node --test"
+  }
+}

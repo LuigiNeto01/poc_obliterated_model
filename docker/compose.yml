@@ -1,0 +1,87 @@
+# Execução isolada do agente (recomendada no Windows 11 via Docker Desktop + WSL2).
+#
+#  ┌──────────── rede "agentnet" (internal: sem internet) ────────────┐
+#  │  agent: Codex CLI + workspace (rw) + Playwright/Chromium          │
+#  │     └─ HTTP → bridge:8787 (token local)                           │
+#  │  bridge: qwen-bridge + workspace (ro) ── rede "egress" → Opper    │
+#  └───────────────────────────────────────────────────────────────────┘
+#
+# A chave OPPER_API_KEY existe apenas no container do bridge.
+# Use os scripts scripts/docker-agent.sh (Linux/WSL/macOS) ou scripts/agent.ps1 (Windows).
+name: qwen-agent
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  pids_limit: 512
+
+services:
+  bridge:
+    <<: *hardening
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        INSTALL_BROWSER: ${INSTALL_BROWSER:-1}
+    image: qwen-agent:local
+    command: ["node", "bridge/src/server.mjs"]
+    user: "${AGENT_UID:-1000}:${AGENT_GID:-1000}"
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      BRIDGE_HOST: 0.0.0.0
+      BRIDGE_PORT: "8787"
+      BRIDGE_LOG_DIR: /opt/poc/logs
+      BRIDGE_ENV_FILE: /dev/null
+      QWEN_BRIDGE_TOKEN: ${QWEN_BRIDGE_TOKEN:?defina QWEN_BRIDGE_TOKEN (os scripts fazem isso)}
+    volumes:
+      - ${AGENT_WORKSPACE:?defina AGENT_WORKSPACE}:/workspace:ro
+      - ../logs:/opt/poc/logs
+    tmpfs:
+      - /tmp
+    networks: [agentnet, egress]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  agent:
+    <<: *hardening
+    image: qwen-agent:local
+    depends_on:
+      bridge:
+        condition: service_healthy
+    entrypoint: ["bash", "/opt/poc/scripts/container-agent.sh"]
+    user: "${AGENT_UID:-1000}:${AGENT_GID:-1000}"
+    working_dir: /workspace
+    environment:
+      HOME: /home/agent
+      CODEX_HOME: /codex-home
+      QWEN_BRIDGE_TOKEN: ${QWEN_BRIDGE_TOKEN}
+      BRIDGE_BASE_URL: http://bridge:8787/v1
+      OPPER_MODEL: ${OPPER_MODEL:-heabsy/qwen38-obl}
+      BRIDGE_ENABLE_BROWSER: ${BRIDGE_ENABLE_BROWSER:-0}
+      PLAYWRIGHT_NO_SANDBOX: "1"
+      TERM: ${TERM:-xterm-256color}
+    volumes:
+      - ${AGENT_WORKSPACE}:/workspace
+      - ../logs/playwright:/opt/poc/logs/playwright
+      - ../.codex-home-docker:/codex-home   # sessões/histórico do Codex (diretório do host)
+    tmpfs:
+      - /tmp:exec,mode=1777
+      - /home/agent:exec,mode=1777
+    shm_size: 512m
+    mem_limit: 4g
+    cpus: 2.0
+    networks: [agentnet]
+    stdin_open: true
+    tty: true
+
+networks:
+  agentnet:
+    internal: true
+  egress: {}
