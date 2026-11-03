@@ -122,9 +122,11 @@ export function parseModelReply(raw) {
   if (!text) return { kind: 'invalid', error: 'Resposta vazia.', notes };
 
   let candidate = text;
-  const fence = /```(?:json)?\s*\n?([\s\S]*?)```/i.exec(text);
-  if (fence) {
-    candidate = fence[1].trim();
+  // Só é bloco markdown se abrir antes do JSON: crases depois disso podem estar dentro de uma string.
+  const fence = /```(?:json)?\s*/i.exec(text);
+  const firstBrace = text.indexOf('{');
+  if (fence && firstBrace !== -1 && fence.index < firstBrace) {
+    candidate = text.slice(fence.index + fence[0].length).replace(/\s*```\s*$/, '');
     notes.push('JSON extraído de bloco markdown');
   }
 

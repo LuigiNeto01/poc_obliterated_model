@@ -29,6 +29,27 @@ test('remove <think> e extrai JSON de bloco markdown', () => {
   assert.ok(r.notes.some((n) => n.includes('markdown')));
 });
 
+test('crases dentro de uma string JSON não são tratadas como bloco markdown', () => {
+  const content = 'Correção:\n```ts\nif (a >= b) {\n  c();\n}\n```\nFim.';
+  const r = parseModelReply(JSON.stringify({ type: 'message', content }));
+  assert.equal(r.kind, 'message');
+  assert.equal(r.content, content);
+  assert.deepEqual(r.notes, []);
+
+  const args = { path: 'README.md', content: '```js\nconst a = {};\n```\n' };
+  const t = parseModelReply(JSON.stringify({ type: 'tool_call', tool: 'file.write', arguments: args }));
+  assert.equal(t.kind, 'tool_call');
+  assert.deepEqual(t.arguments, args);
+});
+
+test('JSON em bloco markdown pode conter crases nas strings', () => {
+  const content = 'Veja:\n```sh\nnpm test\n```';
+  const r = parseModelReply('Resposta:\n```json\n' + JSON.stringify({ type: 'message', content }) + '\n```');
+  assert.equal(r.kind, 'message');
+  assert.equal(r.content, content);
+  assert.deepEqual(r.notes, ['JSON extraído de bloco markdown']);
+});
+
 test('JSON inválido gera erro de parser (sem tentar adivinhar)', () => {
   const r = parseModelReply('{"type":"tool_call","tool":"file.read" "arguments":{}}');
   assert.equal(r.kind, 'invalid');
