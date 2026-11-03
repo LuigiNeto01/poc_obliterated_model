@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Inicia o agente experimental (Codex CLI + Qwen Obliterated) em containers isolados no Windows 11.
 
@@ -39,11 +39,16 @@ $env:BRIDGE_ENABLE_BROWSER = if ($Browser) { '1' } else { '0' }
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'logs\playwright'), (Join-Path $Root '.codex-home-docker') | Out-Null
 
 $compose = @('compose', '-f', (Join-Path $Root 'docker\compose.yml'))
+# PowerShell 5.1: stderr de comando nativo redirecionado vira erro fatal sob 'Stop'; use 'Continue' nesses comandos.
+$ErrorActionPreference = 'Continue'
 docker image inspect qwen-agent:local *> $null
-if ($Rebuild -or $LASTEXITCODE -ne 0) { docker @compose build; if ($LASTEXITCODE -ne 0) { throw 'falha no build' } }
+$imageMissing = $LASTEXITCODE -ne 0
+$ErrorActionPreference = 'Stop'
+if ($Rebuild -or $imageMissing) { docker @compose build; if ($LASTEXITCODE -ne 0) { throw 'falha no build' } }
 try {
   if ($Exec) { docker @compose run --rm agent exec $Exec }
   else { docker @compose run --rm agent }
 } finally {
+  $ErrorActionPreference = 'Continue'
   docker @compose down --remove-orphans *> $null
 }

@@ -1,4 +1,4 @@
-# Copia um exemplo para workspace\<nome> (sem o README com a resposta) e cria um commit inicial.
+﻿# Copia um exemplo para workspace\<nome> (sem o README com a resposta) e cria um commit inicial.
 param([Parameter(Mandatory = $true)][string]$Name)
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
