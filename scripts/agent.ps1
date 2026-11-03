@@ -27,6 +27,14 @@ $bytes = New-Object byte[] 24
 [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
 $env:QWEN_BRIDGE_TOKEN = -join ($bytes | ForEach-Object { $_.ToString('x2') })
 $env:AGENT_UID = '1000'; $env:AGENT_GID = '1000'
+# OPPER_MODEL: variável do PowerShell tem prioridade; senão usa o valor do .env (como o docker-agent.sh).
+if (-not $env:OPPER_MODEL) {
+  $envFile = Join-Path $Root '.env'
+  if (Test-Path $envFile) {
+    $line = Get-Content $envFile | Where-Object { $_ -match '^\s*OPPER_MODEL\s*=' } | Select-Object -Last 1
+    if ($line) { $env:OPPER_MODEL = ($line -split '=', 2)[1].Trim() }
+  }
+}
 $env:BRIDGE_ENABLE_BROWSER = if ($Browser) { '1' } else { '0' }
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'logs\playwright'), (Join-Path $Root '.codex-home-docker') | Out-Null
 
