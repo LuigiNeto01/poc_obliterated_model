@@ -7,10 +7,14 @@ O modelo **não tem tool calling nativo**. Ele opera as ferramentas por um **pro
 interpretado pelo **qwen-bridge**, uma camada determinística que faz parser, validação por schema,
 política de permissões e tradução para as ferramentas nativas do Codex.
 
-> **Status (2026-11-03):** a implementação está completa e validada **sem API real**: 45 testes
-> unitários, E2E com o Codex real + modelo simulado, nos modos local e Docker, incluindo o teste de
-> navegador. O **teste com o Qwen real ainda não foi executado** porque nenhuma chave da Opper estava
-> disponível. Detalhes em [`REPORT.md`](REPORT.md).
+> **Status (2026-11-03):**
+> - Implementação completa: 45 testes unitários e E2E com modelo simulado (local e Docker).
+> - Com **API real**, os dois testes (bug de desconto e formulário no navegador) passaram usando o
+>   **Qwen3.8-27B original** como linha de base: 0 erros de protocolo, US$ 0,0014 e US$ 0,0050.
+> - O modelo-alvo `heabsy/qwen38-obl` está **restrito na Opper** (HTTP 403 `entitlement_required`):
+>   peça liberação a hello@opper.ai e rode `scripts/real-test.sh`.
+>
+> Detalhes em [`REPORT.md`](REPORT.md).
 
 ```
 Usuário → Codex CLI 0.166.0 ──/v1/responses──► qwen-bridge ──chat/completions──► Opper: heabsy/qwen38-obl
@@ -31,7 +35,7 @@ Arquitetura completa e justificativas: [`docs/ARCHITECTURE.md`](docs/ARCHITECTUR
 | Capacidades | **apenas `text`** (sem `tools`, sem visão) | catálogo |
 | Contexto / saída | 524.288 / 32.768 tokens | catálogo |
 | Preço | US$ 0,17 entrada / US$ 1,19 saída por milhão de tokens | catálogo |
-| Grupo de acesso | `abliterated` | catálogo: **pode exigir habilitação na conta** (pendência) |
+| Grupo de acesso | `abliterated` | chamada real: **HTTP 403 `entitlement_required`**. O modelo é restrito; liberação via hello@opper.ai |
 | Parâmetros recomendados (card HF) | temperatura 0,1–0,3, `max_tokens` 1024–2048, `repetition_penalty` 1,15 | o catálogo **não** lista `repetition_penalty` para este modelo, então ele fica opcional via `OPPER_EXTRA_PARAMS` |
 
 ## Requisitos
@@ -68,7 +72,8 @@ scripts/docker-agent.sh workspace/discount-bug
 3. Rode o `check-api`. A saída mostra endpoint, modelo, se a chave está configurada (**nunca o valor**),
    dados do catálogo, latência, `usage` e se a resposta seguiu o protocolo JSON.
 
-Para trocar de provedor, aponte `OPPER_BASE_URL` para qualquer endpoint compatível com
+Para rodar com outro modelo sem editar o `.env` (ex.: a linha de base usada no relatório), use
+`OPPER_MODEL=multiverse:eu/qwen3.8-27b scripts/real-test.sh`. Para trocar de provedor, aponte `OPPER_BASE_URL` para qualquer endpoint compatível com
 Chat Completions e ajuste `OPPER_MODEL`.
 
 ## Primeiro teste obrigatório (projeto com bug)

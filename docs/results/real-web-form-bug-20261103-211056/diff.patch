@@ -1,0 +1,11 @@
+diff --git a/public/app.js b/public/app.js
+index 7a1ad16..562ac97 100644
+--- a/public/app.js
++++ b/public/app.js
+@@ -13,5 +13,5 @@ form.addEventListener('submit', async (event) => {
+     body: JSON.stringify(payload),
+   });
+   const data = await res.json();
+-  document.querySelector('#total-value').textContent = brl.format(data.total);
++  document.querySelector('#total').textContent = brl.format(data.total);
+ });

@@ -1,0 +1,4 @@
+# pass 2
+# fail 0
+total exibido: "R$ 39,80" | erros de página: nenhum
+VERIFICAÇÃO NAVEGADOR: OK

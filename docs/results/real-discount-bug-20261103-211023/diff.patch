@@ -1,0 +1,13 @@
+diff --git a/src/discount.ts b/src/discount.ts
+index f88ac09..f2a434b 100644
+--- a/src/discount.ts
++++ b/src/discount.ts
+@@ -17,7 +17,7 @@ export const MAX_DISCOUNT_RATE = 0.25;
+ export function discountRate(subtotal: number, customer: Customer, coupon?: string): number {
+   let rate = 0;
+ 
+-  if (subtotal > VOLUME_THRESHOLD) {
++  if (subtotal >= VOLUME_THRESHOLD) {
+     rate += 0.1;
+   }
+ 

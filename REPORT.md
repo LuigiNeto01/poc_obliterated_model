@@ -3,11 +3,16 @@
 Data: 2026-11-03. Ambiente de validação: container Linux x86_64 em nuvem com Docker 29.9 e Node 22.23,
 Codex CLI `@openai/codex@0.166.0`.
 
-> **Resumo honesto.** Toda a cadeia (Codex real → bridge → modelo → executor do Codex → resultado →
-> modelo) foi validada com **respostas simuladas** do modelo, nos modos local e Docker, incluindo o teste
-> de navegador. O **teste com o Qwen real NÃO foi executado**: nenhuma `OPPER_API_KEY` estava
-> disponível neste ambiente. Portanto **ainda não há medição da competência do modelo**. O teste real
-> está preparado (`scripts/real-test.sh` / `.ps1`) e a seção 6 traz o modelo de relatório a preencher.
+> **Resumo honesto.**
+> 1. A cadeia completa foi validada com respostas **simuladas** (local e Docker, testes 1 e 2).
+> 2. Com a chave real da Opper, o modelo-alvo `heabsy/qwen38-obl` (Qwen3.8-27B OBLITERATED) respondeu
+>    **HTTP 403 `entitlement_required`**: o modelo é restrito e a liberação é pedida em hello@opper.ai.
+>    O mesmo vale para todos os modelos do grupo `abliterated`.
+> 3. Como linha de base, os dois testes foram executados **com API real** usando o **Qwen3.8-27B original**
+>    (`multiverse:eu/qwen3.8-27b`), o modelo-base do Obliterated, também sem tool calling usado aqui.
+>    Os dois passaram com verificação independente (seção 3b).
+> 4. **O comportamento do Obliterated em si ainda não foi medido.** Depois que o acesso for liberado,
+>    rode `scripts/real-test.sh` sem `OPPER_MODEL` e compare com a linha de base.
 
 ## 1. Verificações de viabilidade (fatos medidos)
 
@@ -63,6 +68,49 @@ Métricas (modo local): 8 chamadas ao "modelo"; ferramentas: `file.list` 1, `ter
 `file.read` 1, `file.patch` 1; erros: `policy` 1, `parser` 1 (ambos intencionais). Os tokens nesse
 modo são **estimativas do mock** (caracteres ÷ 4), não números do provedor.
 
+## 3b. Testes com API REAL: Qwen3.8-27B original (linha de base)
+
+Comando: `OPPER_MODEL=multiverse:eu/qwen3.8-27b scripts/real-test.sh <cenário>`, executado na topologia
+Docker (agente sem internet, chave só no bridge). Parâmetros: temperatura 0,2, `max_tokens` 2048 e
+protocolo no papel `system`. O custo é o **informado pela Opper** em `usage.cost`. Evidências em
+`docs/results/`.
+
+### Primeiro teste (`discount-bug`): SUCESSO
+
+| # | Critério | Resultado | Evidência |
+|---|---|---|---|
+| 1 | Analisou o projeto | ✅ | `file.list`, `file.read` em package.json, src/discount.ts e test/discount.test.ts |
+| 2 | Pediu ferramenta por JSON | ✅ | 8/8 respostas em JSON válido na 1ª tentativa (0 erros de parser/validação) |
+| 3 | Executor executou | ✅ | 7 `tool_result` (6 ok + o `npm test` inicial com exit 1) |
+| 4 | Resultado voltou ao modelo | ✅ | o `thought` do patch cita a regra "a partir de R$ 100 (inclusive)" |
+| 5 | Identificou o bug | ✅ | `>` em vez de `>=` na linha 20 |
+| 6 | Solicitou a edição | ✅ | `file.patch` → `apply_patch` do Codex |
+| 7 | Reexecutou os testes | ✅ | `npm test` → exit 0 |
+| 8 | Testes passam (fora do agente) | ✅ | **6 pass / 0 fail**; diff de 1 linha |
+| 9 | Resumo ao usuário | ✅ | causa, alteração (arquivo/linha) e validação |
+
+Métricas: 8 chamadas ao modelo, latência média de 1,1 s, 28.561 tokens de entrada / 988 de saída,
+**custo US$ 0,00144**, 14 s de execução.
+
+### Segundo teste (`web-form-bug`, navegador): SUCESSO
+
+O modelo leu o código e iniciou o servidor. Depois abriu a página, usou o `browser.snapshot` para obter
+as refs (`e4`/`e5`/`e6`), digitou os valores, clicou e leu o `TypeError` no console. Em seguida corrigiu
+`#total-value` → `#total` com `file.patch`, recarregou, refez a interação (novas refs `f1e4`…) e
+confirmou `R$ 39,80` sem erros. Por fim encerrou o servidor e ainda conferiu com `curl` que a porta
+não respondia mais.
+
+Verificação independente com Playwright fora do agente: `total exibido: "R$ 39,80" | erros de página: nenhum`.
+Métricas: 23 chamadas, 0 erros de protocolo, 142.907 tokens de entrada / 2.128 de saída,
+**custo US$ 0,00495**, cerca de 35 s.
+
+**Observações:**
+- o modelo-base às vezes gera alguns tokens de raciocínio (`reasoning_tokens` 7–148) antes do JSON;
+  isso não afetou o protocolo;
+- o contexto cresce rápido com snapshots do navegador (143k tokens de entrada no teste 2). A compactação
+  de resultados antigos (`BRIDGE_KEEP_FULL_RESULTS`) segurou o custo, mas é o principal fator de custo
+  e latência.
+
 ## 4. Segundo teste com modelo simulado: `web-form-bug` (navegador)
 
 `scripts/e2e-docker-mock.sh web-form-bug` → **SUCESSO**. Linha do tempo registrada pelo bridge:
@@ -90,8 +138,7 @@ O `process.stop` aparece com `exit_code=1` porque o servidor termina por Ctrl+C.
 
 | Item | Motivo / como validar |
 |---|---|
-| **Comportamento do Qwen real** (os 9 critérios com o modelo de verdade) | Sem `OPPER_API_KEY`. Rodar `scripts/real-test.sh` ou `.\scripts\real-test.ps1` |
-| Acesso ao grupo `abliterated` na conta Opper | Desconhecido; o `check-api` mostra 402/403 se faltar acesso ou crédito |
+| **Comportamento do Qwen3.8-27B OBLITERATED** | HTTP 403 `entitlement_required`: pedir liberação a hello@opper.ai. Depois rodar `scripts/real-test.sh` (sem `OPPER_MODEL`) |
 | Aceitação de `repetition_penalty` pelo provedor para este modelo | Não listado no catálogo; teste com `OPPER_EXTRA_PARAMS={"repetition_penalty":1.15}` |
 | Scripts PowerShell (`*.ps1`) e Docker Desktop no Windows 11 | Não há máquina Windows/pwsh neste ambiente. Os scripts **não foram executados**; a lógica equivale aos `.sh` testados |
 | TUI interativa: conversa completa | Só foi verificada a abertura da TUI no container com pseudo-terminal (prompt "Ask Codex to do anything", modelo `heabsy/qwen38-obl`) |

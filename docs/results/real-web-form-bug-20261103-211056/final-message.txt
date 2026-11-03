@@ -1,0 +1,29 @@
+codex
+Problema resolvido e validado.
+
+**Causa:** Em `public/app.js` (linha 16), o código buscava o elemento pelo seletor `#total-value`, mas o elemento `<output>` no `public/index.html` tem id `total` (linha 16 do HTML). Como `document.querySelector('#total-value')` retornava `null`, a tentativa de definir `textContent` lançava `TypeError: Cannot set properties of null (setting 'textContent')` no console, e o total permanecia como "—".
+
+**Correção:** Em `public/app.js`, linha 16, troquei o seletor:
+- Antes: `document.querySelector('#total-value').textContent = brl.format(data.total);`
+- Depois: `document.querySelector('#total').textContent = brl.format(data.total);`
+
+**Validação:**
+1. Iniciei o servidor (`node server.mjs`, porta 3000) e reproduzi o bug: com Quantidade=2 e Preço unitário=19.90, após clicar em Calcular o total continuava "—" e o console exibia o TypeError.
+2. Apliquei a correção, recarreguei a página e repeti a interação (Quantidade=2, Preço unitário=19.90, Calcular).
+3. O total agora é exibido corretamente: **R$ 39,80**, sem erros no console.
+4. Encerrei o servidor (confirmado: a porta 3000 não responde mais).
+tokens used
+145,035
+Problema resolvido e validado.
+
+**Causa:** Em `public/app.js` (linha 16), o código buscava o elemento pelo seletor `#total-value`, mas o elemento `<output>` no `public/index.html` tem id `total` (linha 16 do HTML). Como `document.querySelector('#total-value')` retornava `null`, a tentativa de definir `textContent` lançava `TypeError: Cannot set properties of null (setting 'textContent')` no console, e o total permanecia como "—".
+
+**Correção:** Em `public/app.js`, linha 16, troquei o seletor:
+- Antes: `document.querySelector('#total-value').textContent = brl.format(data.total);`
+- Depois: `document.querySelector('#total').textContent = brl.format(data.total);`
+
+**Validação:**
+1. Iniciei o servidor (`node server.mjs`, porta 3000) e reproduzi o bug: com Quantidade=2 e Preço unitário=19.90, após clicar em Calcular o total continuava "—" e o console exibia o TypeError.
+2. Apliquei a correção, recarreguei a página e repeti a interação (Quantidade=2, Preço unitário=19.90, Calcular).
+3. O total agora é exibido corretamente: **R$ 39,80**, sem erros no console.
+4. Encerrei o servidor (confirmado: a porta 3000 não responde mais).

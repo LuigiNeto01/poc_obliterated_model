@@ -1,0 +1,35 @@
+codex
+## Problema identificado
+
+O teste "10% de desconto a partir de R$ 100 (inclusive)" estava falhando: `finalPrice(100, ana)` retornava `100` em vez de `90`.
+
+**Causa raiz:** em `src/discount.ts` (linha 20), a condição do desconto por volume usava `subtotal > VOLUME_THRESHOLD` (estritamente maior). A regra documentada no próprio arquivo (e cobrada pelo teste) é "a partir de R$ 100,00 **(inclusive)**", ou seja, o limiar deve ser inclusivo. Com `>`, um subtotal de exatamente R$ 100,00 não recebia os 10%.
+
+## Alteração realizada
+
+- `src/discount.ts` (linha 20): `if (subtotal > VOLUME_THRESHOLD)` → `if (subtotal >= VOLUME_THRESHOLD)`
+
+Correção mínima de 1 caractere, sem tocar em outros comportamentos (VIP, cupom, teto de 25%, validação de subtotal).
+
+## Evidência de validação
+
+- Antes: `npm test` → 5 pass / 1 fail (falha no teste do limiar inclusivo, `100 !== 90`).
+- Depois: `npm test` → **6 pass / 0 fail** (todos os testes ok, exit code 0).
+## Problema identificado
+
+O teste "10% de desconto a partir de R$ 100 (inclusive)" estava falhando: `finalPrice(100, ana)` retornava `100` em vez de `90`.
+
+**Causa raiz:** em `src/discount.ts` (linha 20), a condição do desconto por volume usava `subtotal > VOLUME_THRESHOLD` (estritamente maior). A regra documentada no próprio arquivo (e cobrada pelo teste) é "a partir de R$ 100,00 **(inclusive)**", ou seja, o limiar deve ser inclusivo. Com `>`, um subtotal de exatamente R$ 100,00 não recebia os 10%.
+
+## Alteração realizada
+
+- `src/discount.ts` (linha 20): `if (subtotal > VOLUME_THRESHOLD)` → `if (subtotal >= VOLUME_THRESHOLD)`
+
+Correção mínima de 1 caractere, sem tocar em outros comportamentos (VIP, cupom, teto de 25%, validação de subtotal).
+
+## Evidência de validação
+
+- Antes: `npm test` → 5 pass / 1 fail (falha no teste do limiar inclusivo, `100 !== 90`).
+- Depois: `npm test` → **6 pass / 0 fail** (todos os testes ok, exit code 0).
+tokens used
+29,549

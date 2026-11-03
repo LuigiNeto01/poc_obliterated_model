@@ -35,6 +35,7 @@ services:
       BRIDGE_PORT: "8787"
       BRIDGE_LOG_DIR: /opt/poc/logs
       BRIDGE_ENV_FILE: /dev/null
+      OPPER_MODEL: ${OPPER_MODEL:-heabsy/qwen38-obl}   # permite sobrescrever o .env pela linha de comando
       QWEN_BRIDGE_TOKEN: ${QWEN_BRIDGE_TOKEN:?defina QWEN_BRIDGE_TOKEN (os scripts fazem isso)}
     volumes:
       - ${AGENT_WORKSPACE:?defina AGENT_WORKSPACE}:/workspace:ro

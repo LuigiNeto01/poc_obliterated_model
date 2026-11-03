@@ -32,6 +32,8 @@ export class Agent {
   }
 
   costOf(usage) {
+    // Preferência: custo real informado pelo provedor (a Opper devolve usage.cost).
+    if (typeof usage?.cost === 'number') return usage.cost;
     const pin = this.cfg.opper.priceInputPerMtok ?? this.pricing?.input;
     const pout = this.cfg.opper.priceOutputPerMtok ?? this.pricing?.output;
     if (!usage || pin == null || pout == null) return null;
