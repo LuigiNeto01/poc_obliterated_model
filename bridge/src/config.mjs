@@ -69,6 +69,8 @@ export function loadConfig(env = process.env) {
       maxResultChars: num('BRIDGE_MAX_RESULT_CHARS', 12_000),
       keepFullResults: num('BRIDGE_KEEP_FULL_RESULTS', 10),
       logDir: path.resolve(env.BRIDGE_LOG_DIR || path.join(root, 'logs')),
+      // Modo internet: pasta (compartilhada com o agente) de onde o bridge lê os snapshots das páginas.
+      snapshotDir: env.BRIDGE_ALLOW_INTERNET === '1' ? path.resolve(env.BRIDGE_LOG_DIR || path.join(root, 'logs'), 'playwright') : null,
       logPrompts: (env.BRIDGE_LOG_PROMPTS || 'full') !== 'none',
       // Força a política de aprovação, caso não seja possível inferi-la do Codex.
       approvalOverride: env.BRIDGE_APPROVAL_POLICY || '',

@@ -1,0 +1,10 @@
+# Sobreposição opcional: dá internet ao container do agente (agent.ps1 -Internet / ALLOW_INTERNET=1).
+# O padrão continua sem internet. A chave da API segue apenas no bridge.
+services:
+  bridge:
+    environment:
+      BRIDGE_ALLOW_INTERNET: "1"
+  agent:
+    environment:
+      BRIDGE_ALLOW_INTERNET: "1"
+    networks: [agentnet, egress]

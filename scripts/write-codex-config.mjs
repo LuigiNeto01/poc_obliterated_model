@@ -68,7 +68,10 @@ if (browser) {
     process.exit(1);
   }
   const outDir = path.join(root, 'logs', 'playwright');
-  const args = ['--headless', '--isolated', '--browser', 'chromium', '--output-dir', outDir, '--allowed-origins', 'http://localhost:*;http://127.0.0.1:*'];
+  const origins = process.env.BRIDGE_ALLOW_INTERNET === '1'
+    ? ['--blocked-origins', 'http://bridge:*;http://host.docker.internal:*;https://host.docker.internal:*;http://gateway.docker.internal:*']
+    : ['--allowed-origins', 'http://localhost:*;http://127.0.0.1:*'];
+  const args = ['--headless', '--isolated', '--browser', 'chromium', '--output-dir', outDir, ...origins];
   if (process.env.PLAYWRIGHT_CHROMIUM) args.push('--executable-path', process.env.PLAYWRIGHT_CHROMIUM);
   if (process.env.PLAYWRIGHT_NO_SANDBOX === '1') args.push('--no-sandbox');
   toml += `

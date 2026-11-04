@@ -161,6 +161,27 @@ test('catálogo inclui ferramentas de navegador somente quando o Codex as oferec
   assert.ok(nav.translate({ url: 'https://evil.example' }).deny);
 });
 
+test('modo internet: navegador abre sites públicos, mas não hosts internos', () => {
+  const tools = indexCodexTools([
+    { type: 'function', name: 'exec_command', parameters: {} },
+    { type: 'namespace', name: 'mcp__playwright', tools: [{ type: 'function', name: 'browser_navigate', parameters: {} }] },
+  ]);
+  process.env.BRIDGE_ALLOW_INTERNET = '1';
+  try {
+    const nav = buildCatalog(tools).find((t) => t.name === 'browser.navigate');
+    for (const url of ['https://example.com/a?q=1', 'https://html.duckduckgo.com/html/?q=x', 'http://localhost:3000']) {
+      assert.ok(nav.translate({ url }).codex, url);
+    }
+    for (const url of ['http://bridge:8787/v1', 'http://host.docker.internal:8080', 'http://10.0.0.1', 'http://172.17.0.1', 'http://192.168.0.1', 'http://169.254.169.254/latest', 'http://[fd00::1]', 'file:///etc/passwd', 'javascript:alert(1)']) {
+      assert.ok(nav.translate({ url }).deny, url);
+    }
+  } finally {
+    delete process.env.BRIDGE_ALLOW_INTERNET;
+  }
+  const off = buildCatalog(tools).find((t) => t.name === 'browser.navigate');
+  assert.ok(off.translate({ url: 'https://example.com' }).deny);
+});
+
 test('truncateMiddle preserva início e fim', () => {
   const t = truncateMiddle('a'.repeat(100) + 'FIM', 50);
   assert.ok(t.endsWith('FIM'));

@@ -6,8 +6,35 @@ import path from 'node:path';
 import { Agent } from '../src/agent.mjs';
 import { Logger } from '../src/logger.mjs';
 import { createServer } from '../src/server.mjs';
-import { decodeCallMeta, convertInput } from '../src/convert.mjs';
+import { decodeCallMeta, encodeCallMeta, convertInput } from '../src/convert.mjs';
 import { UpstreamError } from '../src/opper.mjs';
+
+test('modo internet: navegação inclui o snapshot, sem ler nada fora da pasta de snapshots', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qb-snap-'));
+  fs.writeFileSync(path.join(dir, 'page-1.yml'), '- heading "Resultado real"\n');
+  fs.writeFileSync(path.join(dir, 'segredo.txt'), 'NAO-VAZAR');
+  const nav = (id, link, tool = 'browser.navigate') => [
+    { type: 'reasoning', encrypted_content: encodeCallMeta({ call_id: id, tool, arguments: {} }) },
+    { type: 'function_call', call_id: id, name: 'browser_navigate', arguments: '{}' },
+    { type: 'function_call_output', call_id: id, output: `### Page\n- [Snapshot](${link})` },
+  ];
+  const textOf = (items, opts) => convertInput(items, opts).messages.map((m) => m.content).join('\n');
+
+  const on = textOf(nav('a', '../opt/poc/logs/playwright/page-1.yml'), { snapshotDir: dir });
+  assert.match(on, /Resultado real/);
+  assert.match(on, /não confiável/);
+
+  const blocked = [textOf(nav('b', `../../${path.basename(dir)}/segredo.txt`), { snapshotDir: dir }), textOf(nav('c', 'page-inexistente.yml'), { snapshotDir: dir })];
+  for (const t of blocked) {
+    assert.doesNotMatch(t, /NAO-VAZAR/);
+    assert.match(t, /use browser\.snapshot/);
+  }
+  assert.match(textOf(nav('d', 'page-1.yml', 'browser.type'), { snapshotDir: dir }), /use browser\.snapshot/);
+
+  const off = textOf(nav('e', 'page-1.yml'));
+  assert.doesNotMatch(off, /Resultado real/);
+  assert.match(off, /use browser\.snapshot/);
+});
 
 const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'qb-agent-'));
 fs.writeFileSync(path.join(ws, 'a.ts'), 'if (x > 100) {}\n');

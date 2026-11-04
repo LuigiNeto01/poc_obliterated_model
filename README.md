@@ -143,6 +143,22 @@ textual "enxerga" a página pela árvore de acessibilidade (`browser.snapshot`),
 rede. Screenshots são só evidência. Verificação independente:
 `docker run --rm -e PLAYWRIGHT_NO_SANDBOX=1 -v "<workspace>:/ws" qwen-agent:local node scripts/verify-web-form-bug.mjs /ws`.
 
+## Acesso à internet (opcional)
+
+Por padrão o agente não tem internet. Para permitir que ele abra sites e pesquise:
+
+```powershell
+.\scripts\agent.ps1 -Workspace .\workspace\meu-projeto -Internet   # Windows
+ALLOW_INTERNET=1 scripts/docker-agent.sh workspace/meu-projeto     # Linux/WSL/macOS
+```
+
+Nesse modo, `browser.navigate` abre URLs públicas sem pedir código. Hosts internos e redes privadas
+continuam negados, e `curl`, `wget` e comandos com URL externa continuam exigindo `autorizo <código>`.
+A chave da API segue apenas no bridge.
+
+**Risco:** uma página pode conter instruções que manipulem o modelo e levem dados do workspace para fora,
+por exemplo na URL de uma navegação. Use em projetos sem segredos.
+
 ## Testes sem API real
 
 ```bash

@@ -10,11 +10,13 @@
   .\scripts\agent.ps1 -Workspace .\workspace\discount-bug
   .\scripts\agent.ps1 -Workspace .\workspace\discount-bug -Exec "Investigue por que os testes falham..."
   .\scripts\agent.ps1 -Workspace .\workspace\web-form-bug -Browser
+  .\scripts\agent.ps1 -Workspace .\workspace\meu-projeto -Internet
 #>
 param(
   [Parameter(Mandatory = $true)][string]$Workspace,
   [string]$Exec,
   [switch]$Browser,
+  [switch]$Internet,
   [switch]$Rebuild
 )
 $ErrorActionPreference = 'Stop'
@@ -28,6 +30,8 @@ $bytes = New-Object byte[] 24
 $env:QWEN_BRIDGE_TOKEN = -join ($bytes | ForEach-Object { $_.ToString('x2') })
 $env:AGENT_UID = '1000'; $env:AGENT_GID = '1000'
 # OPPER_MODEL: variável do PowerShell tem prioridade; senão usa o valor do .env (como o docker-agent.sh).
+# O valor original é restaurado ao sair: o script roda no processo do terminal e não pode prender o modelo do .env.
+$originalModel = $env:OPPER_MODEL
 if (-not $env:OPPER_MODEL) {
   $envFile = Join-Path $Root '.env'
   if (Test-Path $envFile) {
@@ -35,10 +39,14 @@ if (-not $env:OPPER_MODEL) {
     if ($line) { $env:OPPER_MODEL = ($line -split '=', 2)[1].Trim() }
   }
 }
-$env:BRIDGE_ENABLE_BROWSER = if ($Browser) { '1' } else { '0' }
+$env:BRIDGE_ENABLE_BROWSER = if ($Browser -or $Internet) { '1' } else { '0' }
 New-Item -ItemType Directory -Force -Path (Join-Path $Root 'logs\playwright'), (Join-Path $Root '.codex-home-docker') | Out-Null
 
 $compose = @('compose', '-f', (Join-Path $Root 'docker\compose.yml'))
+if ($Internet) {
+  Write-Warning 'Modo -Internet: o agente pode acessar sites externos. Conteúdo da web pode tentar manipular o modelo; use em projetos sem segredos.'
+  $compose += @('-f', (Join-Path $Root 'docker\compose.internet.yml'))
+}
 # PowerShell 5.1: stderr de comando nativo redirecionado vira erro fatal sob 'Stop'; use 'Continue' nesses comandos.
 $ErrorActionPreference = 'Continue'
 docker image inspect qwen-agent:local *> $null
@@ -51,4 +59,5 @@ try {
 } finally {
   $ErrorActionPreference = 'Continue'
   docker @compose down --remove-orphans *> $null
+  $env:OPPER_MODEL = $originalModel
 }

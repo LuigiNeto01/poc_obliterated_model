@@ -53,7 +53,7 @@ export class Agent {
     const cwd = env.cwd || process.cwd();
     const roots = env.roots.length ? env.roots : [cwd];
     const approvalPolicy = this.cfg.bridge.approvalOverride || env.approvalPolicy || 'never';
-    const conv = convertInput(items, { maxResultChars: this.cfg.bridge.maxResultChars, keepFullResults: this.cfg.bridge.keepFullResults });
+    const conv = convertInput(items, { maxResultChars: this.cfg.bridge.maxResultChars, keepFullResults: this.cfg.bridge.keepFullResults, snapshotDir: this.cfg.bridge.snapshotDir });
 
     for (const r of conv.toolResults) {
       if (this.loggedResults.has(r.call_id)) continue;

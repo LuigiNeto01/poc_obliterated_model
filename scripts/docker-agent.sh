@@ -4,7 +4,7 @@
 # Uso:
 #   scripts/docker-agent.sh <workspace>                 # sessão interativa (TUI do Codex)
 #   scripts/docker-agent.sh <workspace> exec "tarefa"   # execução autônoma
-# Variáveis: BRIDGE_ENABLE_BROWSER=1, INSTALL_BROWSER=0 (imagem sem Chromium), REBUILD=1
+# Variáveis: BRIDGE_ENABLE_BROWSER=1, ALLOW_INTERNET=1, INSTALL_BROWSER=0 (imagem sem Chromium), REBUILD=1
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WS="${1:?informe o diretório do workspace (ex.: workspace/discount-bug)}"
@@ -20,6 +20,10 @@ if [[ -z "${OPPER_MODEL:-}" && -f "$ROOT/.env" ]]; then
 fi
 mkdir -p "$ROOT/logs/playwright" "$ROOT/.codex-home-docker"
 COMPOSE=(docker compose -f "$ROOT/docker/compose.yml")
+if [[ "${ALLOW_INTERNET:-0}" == "1" ]]; then
+  export BRIDGE_ENABLE_BROWSER=1
+  COMPOSE+=(-f "$ROOT/docker/compose.internet.yml")
+fi
 if [[ "${REBUILD:-0}" == "1" ]] || ! docker image inspect qwen-agent:local >/dev/null 2>&1; then
   "${COMPOSE[@]}" build
 fi
